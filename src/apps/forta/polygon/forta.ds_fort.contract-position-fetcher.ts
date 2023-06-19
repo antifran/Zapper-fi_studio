@@ -28,7 +28,7 @@ export class PolygonFortaDsFortContractPositionFetcher extends ContractPositionT
   }
 
   getContract(_address: string): DsFort {
-    return this.contractFactory.DsFort({ address, network: this.network });
+    return this.contractFactory.DsFort({_address, network: this.network });
   }
 
   async getDefinitions() {
@@ -49,7 +49,15 @@ export class PolygonFortaDsFortContractPositionFetcher extends ContractPositionT
     return getLabelFromToken(contractPosition.tokens[0];
   } 
 
-  async
+  async getPositions() {
+    const graphHelper = this.appToolkit.helpers.theGraphHelper;
+    const data = graphHelper.requestGraph<MeanFinancePositions>({
+      endpoint: 'https://api.thegraph.com/subgraphs/name/mean-finance/dca-v2-polygon',
+      query: getPositions,
+    })
+    const positions = data.positions;
+
+    return [];
 
   async getTokenBalancesPerPosition({ address, contract }: GetTokenBalancesParams<DsFort>) {
    // trying to find a way to check token balances. Will from zapper suggested EthereumApi3StakingContractPositionFetcher, it's the same pattern (except getTokenBalancesPerPosition which is different) 
