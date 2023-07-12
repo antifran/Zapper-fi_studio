@@ -1,24 +1,21 @@
 import { Inject } from '@nestjs/common';
-import { BigNumberish, Contract } from 'ethers';
 
 import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
-import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
-import { DefaultDataProps } from '~position/display.interface';
+import { Register } from '~app-toolkit/decorators';
+import { BalanceFetcher } from '~app-toolkit/decorators/balance-fetcher.decorator';
+import { getLabelFromToken } from '~app-toolkit/helpers/presentation/image.present';
+import { MetaType, Standard } from '~position/position.interface';
 import { ContractPositionTemplatePositionFetcher } from '~position/template/contract-position.template.position-fetcher';
-import {
-  GetDefinitionsParams,
-  DefaultContractPositionDefinition,
-  GetTokenDefinitionsParams,
-  UnderlyingTokenDefinition,
-  GetDisplayPropsParams,
-  GetTokenBalancesParams,
-} from '~position/template/contract-position.template.types';
+import { GetTokenBalancesParams, GetDisplayPropsParams } from '~position/template/contract-position.template.types';
+//import { GetDisplayPropsParams } from '~position/template/contract-position.template.types';
 
-import { FortaContractFactory } from '../contracts';
+import { DsFort, FortaContractFactory } from '../contracts';
+import { DsFortInterface } from '../contracts/ethers/DsFort';
+import { AccountStakePosition, STAKE_POSITIONS } from '../graphql/getStakes';
 
-@PositionTemplate()
-export class PolygonFortaFortDsContractPositionFetcher extends ContractPositionTemplatePositionFetcher<Contract> {
-  groupLabel: string;
+@Register.BalanceFetcher()
+export class PolygonFortaFortDsContractPositionFetcher extends ContractPositionTemplatePositionFetcher<DsFort> {
+  groupLabel: 'Staking';
 
   constructor(
     @Inject(APP_TOOLKIT) protected readonly appToolkit: IAppToolkit,
@@ -27,27 +24,65 @@ export class PolygonFortaFortDsContractPositionFetcher extends ContractPositionT
     super(appToolkit);
   }
 
-  getContract(_address: string): Contract {
-    throw new Error('Method not implemented.');
+//  BOTH METHODS DON`T HAVE TO BE OVERRIDEN
+  //async getPositions() {
+    //const graphHelper = this.appToolkit.helpers.theGraphHelper;
+    //const data = graphHelper.requestGraph<AccountStakePosition>({
+     // endpoint: 'https://api.forta.network/graphql',
+      //query: STAKE_POSITIONS,
+     // variables: { id },
+   // });
+   // return data.positions;
+ // }
+
+  //async getBalances(address: string) {
+    //const positions = await this.getUserPositions(address);
+  //}
+
+  getContract(address: string): DsFort {
+    return this.contractFactory.dsFort({ address, network: this.network });
   }
 
-  getDefinitions(_params: GetDefinitionsParams): Promise<DefaultContractPositionDefinition[]> {
-    throw new Error('Method not implemented.');
+  async getDefinitions() {
+    return [{ address: '0xd2863157539b1d11f39ce23fc4834b62082f6874' }];
   }
 
-  getTokenDefinitions(
-    _params: GetTokenDefinitionsParams<Contract, DefaultContractPositionDefinition>,
-  ): Promise<UnderlyingTokenDefinition[] | null> {
-    throw new Error('Method not implemented.');
+  async getTokenDefinitions() {
+    return [
+      {
+        metaType: MetaType.SUPPLIED,
+        address: '0x9ff62d1fc52a907b6dcba8077c2ddca6e6a9d3e1',
+        network: this.network,
+      },
+    ];
   }
 
-  getLabel(
-    _params: GetDisplayPropsParams<Contract, DefaultDataProps, DefaultContractPositionDefinition>,
-  ): Promise<string> {
-    throw new Error('Method not implemented.');
+  async getLabel({ contractPosition }: GetDisplayPropsParams<DsFort>) {
+    return getLabelFromToken(contractPosition.tokens[0]);
   }
 
-  getTokenBalancesPerPosition(_params: GetTokenBalancesParams<Contract, DefaultDataProps>): Promise<BigNumberish[]> {
-    throw new Error('Method not implemented.');
+  // In getTokenBalancesPerPosition, you will need to implement the code to fetch balances
+  //I've poked around the contract and here's what you will have to do
+  //for an address, fetch all the subjectId
+  //for each subjectId You will need to make a call on the contract to get the number of active share
+  //sum the number of share
+  //return the sum
+  async getTokenBalancesPerPosition({ address, contract }: GetTokenBalancesParams<DsFort>) {
+    const graphHelper = this.appToolkit.helpers.theGraphHelper;
+    const data = await graphHelper.requestGraph<AccountStakePosition>({
+      endpoint: 'https://api.forta.network/graphql',
+      query: STAKE_POSITIONS,
+      variables: { id: address },
+    });
+    const fortaStakingContract = this.contractFactory.fortaStaking({
+      address: 'STAKING_CONTRACT_ADDRESS',
+      network: this.network,
+    });
+
+
+    const balances = await multicall
+      .wrap(fortaStakingContract)
+      .shareOf(subjectType,subjectId,address);
+    return balances;
   }
 }
