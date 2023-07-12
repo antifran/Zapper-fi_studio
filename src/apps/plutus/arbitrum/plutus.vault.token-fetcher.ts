@@ -36,14 +36,6 @@ export class ArbitrumPlutusVaultTokenFetcher extends AppTokenTemplatePositionFet
         underlyingTokenAddress: '0x4277f8f2c384827b5273592ff7cebd9f2c1ac258',
       },
       {
-        address: '0xf236ea74b515ef96a9898f5a4ed4aa591f253ce1', // plsDPX
-        underlyingTokenAddress: '0x6c2c06790b3e3e3c38e12ee22f8183b37a13ee55',
-      },
-      {
-        address: '0x1605bbdab3b38d10fa23a7ed0d0e8f4fea5bff59', // plsRDNT
-        underlyingTokenAddress: '0x3082cc23568ea640225c2467653db90e9250aaa0',
-      },
-      {
         address: '0x7a5d193fe4ed9098f7eadc99797087c96b002907', // plsARB
         underlyingTokenAddress: '0x912ce59144191c1204e64559fe8253a0e49e6548',
       },
